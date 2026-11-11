@@ -15,10 +15,11 @@ export function historyFor(actor:string,prior:PriorAction[]){
  if(actor==='BB'&&prior.every(a=>a==='Fold'))throw Error('모두 폴드한 BB는 이미 팟을 획득합니다.');
  return [...prior.flatMap((a,i)=>[solverSeats[i],a]),actor].join('_');
 }
-export function parseNode(raw:unknown,stack:number,history:string):SolverNode{
+export function parseNode(raw:unknown,stack:number,history:string,hand?:string):SolverNode{
  const n=raw as SolverNode;
  if(!n||n.game!=='nlmtt8'||n.stack!==stack||n.history!==history||n.actor!==history.split('_').at(-1)||!Array.isArray(n.actions)||!n.actions.length)throw Error('API 응답이 요청한 상황과 다릅니다. 결과를 표시하지 않았습니다.');
  for(const a of n.actions){
+  if(hand){const single=a as SolverAction & {freq?:number;frequency?:number;ev?:number};const frequency=single.freq??single.frequency;if(!a.weights&&typeof frequency==='number')a.weights={[hand]:frequency};if(!a.evs&&typeof single.ev==='number')a.evs={[hand]:single.ev}}
   if(typeof a.action!=='string'||typeof a.weights!=='object'||!a.weights)throw Error('API 레인지 형식을 확인할 수 없습니다.');
   if(Object.values(a.weights).some(v=>typeof v!=='number'||!Number.isFinite(v)||v<0||v>1))throw Error('API 빈도 값이 유효하지 않습니다.');
  }
@@ -30,11 +31,11 @@ export function handStrategy(node:SolverNode,hand:string){
  return {rows,total,valid:Math.abs(total-1)<.025};
 }
 export const actionName=(action:string)=>({Fold:'폴드',Call:'콜',Limp:'림프',Open:'오픈','3B':'3벳','4B':'4벳','5B':'5벳',AI:'올인'} as Record<string,string>)[action]??action;
-export async function fetchSolverNode(key:string,stack:number,history:string,signal?:AbortSignal){
- const query=new URLSearchParams({stack:String(stack),history,full:'1'});
+export async function fetchSolverNode(key:string,stack:number,history:string,signal?:AbortSignal,hand?:string){
+ const query=new URLSearchParams({stack:String(stack),history});if(hand)query.set('hand',hand);
  const response=await fetch(`https://pokerdata.io/api/v1/ranges/nlmtt8/node?${query}`,{headers:{Authorization:`Bearer ${key.trim()}`},signal,credentials:'omit',referrerPolicy:'no-referrer'});
  if(!response.ok)throw Error(response.status===401||response.status===403?'API 키 또는 이 데이터의 접근 권한을 확인하세요.':response.status===429?'무료 호출 한도 또는 요청 속도를 초과했습니다. PokerData 대시보드를 확인하세요.':response.status===404?'이 액션 경로의 계산 결과가 제공되지 않습니다. 다른 조건으로 바꾸세요.':`조회 실패 (${response.status}). 잠시 후 다시 시도하세요.`);
- return parseNode(await response.json(),stack,history);
+ return parseNode(await response.json(),stack,history,hand);
 }
 
 // Catalog addresses, rather than guessed action labels, define the input tree.
