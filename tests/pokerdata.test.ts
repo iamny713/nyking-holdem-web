@@ -61,3 +61,19 @@ test('usage reads actual account headers and never invents absent values',()=>{
  const partial=readUsage(new Headers({'X-Usage-Requests-Used':'7','X-Usage-Bytes-Limit':'oops'}))!;
  assert.equal(partial.requestsLimit,null);assert.equal(partial.bytesLimit,null);
 });
+
+import {closestSupportedHistory,MissingSolverPathError,fetchSolverNode} from '../src/pokerdata.ts';
+test('recovery keeps the longest exact action prefix without substituting another raise',()=>{
+ const histories=['UTG','UTG_Fold_UTG1','UTG_Fold_UTG1_Open_LJ','UTG_Fold_UTG1_AI_LJ'];
+ assert.equal(closestSupportedHistory(histories,'UTG_Fold_UTG1_Open_LJ_Call_HJ'),'UTG_Fold_UTG1_Open_LJ');
+ assert.equal(closestSupportedHistory(histories,'UTG_Fold_UTG1_Open-40100_LJ'),'UTG_Fold_UTG1');
+ assert.equal(closestSupportedHistory([], 'UTG'),null);
+});
+test('chart request omits hand and 404 is identifiable for negative caching',async()=>{
+ const original=globalThis.fetch;let url='';
+ try{globalThis.fetch=async input=>{url=String(input);return new Response(JSON.stringify({game:'nlmtt8',stack:40,history:'UTG',actor:'UTG',actions:[{action:'Fold',kind:'fold',weights:{'72o':1}}]}),{status:200})};
+ await fetchSolverNode('test-key',40,'UTG');assert.equal(new URL(url).searchParams.has('hand'),false);
+ globalThis.fetch=async()=>new Response('{}',{status:404});
+ await assert.rejects(()=>fetchSolverNode('test-key',40,'UTG'),MissingSolverPathError);
+ }finally{globalThis.fetch=original}
+});
