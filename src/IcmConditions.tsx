@@ -1,0 +1,3 @@
+import {solverSeats} from './pokerdata';
+import type {IcmScenario} from './icm';
+export function IcmConditions({scenario:s}:{scenario:IcmScenario}){return <div className="solver-assumptions"><b>ICM · {s.playersLeft}명 생존 / {s.table.icm.paidPlaces}명 입상</b><p>카탈로그 평균 {s.stackBb}BB · 블라인드 {s.table.blinds.sbBb}/{s.table.blinds.bbBb}BB · 각 좌석 앤티 {s.table.ante.bb}BB</p><div className="icm-seat-stacks">{solverSeats.map(p=><span key={p}><b>{p==='UTG1'?'UTG+1':p}</b> {s.table.stacksBb[p]}BB</span>)}</div><details><summary>상금 구조 · USD</summary><ol>{s.table.icm.payouts.map((p,i)=><li key={i}>{i+1}위 · ${p.toLocaleString()}</li>)}</ol></details><p className="hint">고정 시나리오의 기대 상금 EV입니다. 10명 시작·2~3명 입상 게임의 맞춤 계산 결과가 아닙니다.</p></div>}
