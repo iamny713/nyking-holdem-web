@@ -3,7 +3,7 @@ export type PostflopPack={id:string;title:string;stackBb:number;oopPos:string;ip
 export type PostflopNode={actions:(string|{label?:string;name?:string;type?:string;add?:number})[];childSegments:string[];hands:{combo?:string;hand?:string;freqs:number[];action_ev?:number[];ev_loss?:number[]}[];board?:string|string[];pot?:number;player?:string|number;actor?:string;path?:string[]};
 export function parsePostflop(raw:unknown):PostflopNode{
  const envelope=raw as {node?:unknown};const n=(envelope?.node??raw) as PostflopNode;
- if(!n||!Array.isArray(n.actions)||!Array.isArray(n.childSegments)||!n.childSegments.every(s=>typeof s==='string')||!Array.isArray(n.hands))throw Error('포스트플랍 응답 형식을 확인할 수 없습니다. 추정 결과를 표시하지 않았습니다.');
+ if(!n||!Array.isArray(n.actions)||!Array.isArray(n.childSegments)||!n.childSegments.every(s=>typeof s==='string')||!Array.isArray(n.hands))throw Error('포스트플랍 응답 형식 확인: '+JSON.stringify(responseShape(raw)));
  for(const h of n.hands)if(!Array.isArray(h.freqs)||h.freqs.length!==n.actions.length||h.freqs.some(f=>typeof f!=='number'||!Number.isFinite(f)||f<0||f>1))throw Error('액션 빈도 형식이 올바르지 않습니다.');
  return n;
 }
@@ -20,3 +20,5 @@ export async function fetchPostflopNode(key:string,pack:string,board:string,path
  if(!r.ok)throw Error(r.status===404?'이 보드 또는 액션 경로의 결과가 없습니다.':r.status===401||r.status===403?'API 키 또는 포스트플랍 접근 권한을 확인하세요.':r.status===429?'API 요청 한도를 확인하세요.':`포스트플랍 조회 실패 (${r.status})`);
  return parsePostflop(await r.json());
 }
+
+function responseShape(v:unknown,depth=0):unknown{if(depth>3)return typeof v;if(Array.isArray(v))return {length:v.length,first:responseShape(v[0],depth+1)};if(v&&typeof v==='object')return Object.fromEntries(Object.entries(v).map(([k,x])=>[k,responseShape(x,depth+1)]));return typeof v}
