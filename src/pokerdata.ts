@@ -41,26 +41,8 @@ export async function fetchSolverNode(key:string,stack:number,history:string,sig
  return parseNode(await response.json(),stack,history,hand);
 }
 
-// Catalog addresses, rather than guessed action labels, define the input tree.
-export function parseSpots(raw:unknown):string[]{
- const found=new Set<string>();
- const isHistory=(s:string)=>/^(UTG|UTG1|LJ|HJ|CO|BTN|SB|BB)(_[A-Za-z0-9%+.-]+_(UTG|UTG1|LJ|HJ|CO|BTN|SB|BB))*$/.test(s);
- const visit=(v:unknown)=>{if(typeof v==='string'){if(isHistory(v))found.add(v)}else if(Array.isArray(v))v.forEach(visit);else if(v&&typeof v==='object')for(const [k,x] of Object.entries(v)){if(isHistory(k))found.add(k);if(['spots','nodes','histories','history','path','data','results'].includes(k))visit(x)}};
- visit(raw);if(!found.size)throw Error('지원 상황 목록의 형식을 확인할 수 없습니다. 추정 액션을 표시하지 않았습니다.');
- return [...found];
-}
-export function nextSteps(histories:string[],prefix:string){
- const edges=new Map<string,{action:string;next:string}>();
- for(const history of histories){if(!history.startsWith(prefix+'_'))continue;const suffix=history.slice(prefix.length+1).split('_');if(suffix.length<2)continue;const [action,seat]=suffix;edges.set(`${action}:${seat}`,{action,next:`${prefix}_${action}_${seat}`})}
- return [...edges.values()];
-}
 export function pathDecisions(history:string){const parts=history.split('_');return parts.flatMap((actor,i)=>i%2===0&&i<parts.length-1?[{actor,action:parts[i+1],history:parts.slice(0,i+1).join('_')}]:[])}
 export function dominantStrategy(node:SolverNode,hand:string){const s=handStrategy(node,hand);if(!s.valid)return null;const rows=[...s.rows].filter(r=>r.freq>0).sort((a,b)=>b.freq-a.freq);return {rows,mixed:rows.filter(r=>r.freq>=.01).length>1,main:rows[0]}}
-export async function fetchSolverSpots(key:string,stack:number,signal?:AbortSignal){
- const response=await fetch(`https://pokerdata.io/api/v1/ranges/nlmtt8/spots?stack=${stack}`,{headers:{Authorization:`Bearer ${key.trim()}`},signal,credentials:'omit',referrerPolicy:'no-referrer'});
- if(!response.ok)throw Error(response.status===429?'요청 한도를 초과했습니다.':response.status===401||response.status===403?'API 키와 데이터 접근 권한을 확인하세요.':`지원 상황 목록 조회 실패 (${response.status})`);
- return parseSpots(await response.json());
-}
 export type SolverConfig={game:string;stack:number;blinds:{sb:number;bb:number};ante:number;antePostedBy:string;stacks:number[]|null;openSizes:{open:{label:string;sizeBb:number};sb:{label:string;sizeBb:number};note?:string|null}};
 export async function fetchSolverConfig(stack:number,signal?:AbortSignal):Promise<SolverConfig>{
  const response=await fetch(`https://pokerdata.io/api/v1/ranges/nlmtt8/config?stack=${stack}`,{signal,credentials:'omit',referrerPolicy:'no-referrer'});
@@ -100,8 +82,4 @@ export function readUsage(headers:Headers):SolverUsage|null{
  const num=(name:string)=>{const text=headers.get(name);if(text===null||!text.trim())return null;const n=Number(text);return Number.isFinite(n)&&n>=0?n:null};
  const usage={requestsUsed:num('X-Usage-Requests-Used'),requestsLimit:num('X-Usage-Requests-Limit'),bytesUsed:num('X-Usage-Bytes-Used'),bytesLimit:num('X-Usage-Bytes-Limit'),resetsAt:headers.get('X-Usage-Resets-At'),updatedAt:Date.now()};
  return [usage.requestsUsed,usage.requestsLimit,usage.bytesUsed,usage.bytesLimit].some(v=>v!==null)?usage:null;
-}
-
-export function closestSupportedHistory(histories:string[],history:string):string|null{
- return histories.filter(h=>h===history||history.startsWith(h+'_')).sort((a,b)=>b.split('_').length-a.split('_').length)[0]??null;
 }

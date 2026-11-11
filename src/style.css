@@ -34,5 +34,3 @@
 .solver-ratio-grid button{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;min-height:48px;padding:3px 0}.solver-ratio-grid button b{font-size:12px}.solver-ratio-grid button small{font-size:10px;font-weight:700;line-height:1.1}.solver-grid-legend{display:flex;flex-wrap:wrap;gap:10px 14px;margin:16px 0 8px;font-size:11px;color:#c5d2bc}.solver-grid-legend i{margin-right:5px;border-radius:2px}@media(max-width:650px){.solver-ratio-grid button{min-height:43px;gap:3px}.solver-ratio-grid button b{font-size:9px;letter-spacing:-.4px}.solver-ratio-grid button small{font-size:8px;letter-spacing:-.3px}}
 
 .solver-result-flow{margin:24px 0 20px;padding:17px;background:#101a15;border:1px solid #60794b;border-radius:10px}.solver-result-flow h3{font-size:15px;color:#dcedce}.solver-result-flow .solver-flow-seat{display:block;font-size:14px;font-weight:700;color:#e8efdf}
-
-.solver-recovery{margin-top:18px;padding:16px;border:1px solid #c0a16e;background:#e8c18508;border-radius:10px}.solver-recovery .chips{margin-top:12px}

@@ -17,13 +17,9 @@ test('response matching, missing EVs, and incomplete hand weights are explicit',
  assert.throws(()=>parseNode({...n,actions:[{action:'Open',kind:'raise',weights:{AA:100}}]},40,'UTG'));
 });
 
-import {parseSpots,nextSteps,pathDecisions,dominantStrategy} from '../src/pokerdata.ts';
-test('catalog navigation preserves exact action tokens and repeat actors',()=>{
- const list=parseSpots({spots:[{history:'UTG'},{history:'UTG_Open-40034_UTG1'},{history:'UTG_Open-40034_UTG1_3B_BTN'},{history:'UTG_Open-40034_UTG1_3B_BTN_Fold_UTG'}]});
- assert.deepEqual(nextSteps(list,'UTG'),[{action:'Open-40034',next:'UTG_Open-40034_UTG1'}]);
- assert.equal(nextSteps(list,'UTG_Open-40034_UTG1_3B_BTN')[0].next,'UTG_Open-40034_UTG1_3B_BTN_Fold_UTG');
+import {pathDecisions,dominantStrategy} from '../src/pokerdata.ts';
+test('action trail preserves action tokens',()=>{
  assert.deepEqual(pathDecisions('UTG_Fold_UTG1_Open_LJ').map(x=>x.action),['Fold','Open']);
- assert.throws(()=>parseSpots({message:'unsupported'}));
 });
 test('simplification retains mixed strategies and refuses invalid frequencies',()=>{
  const node={game:'nlmtt8',stack:40,history:'UTG',actor:'UTG',evUnit:'sb',evBaseline:'fold',actions:[{action:'Call',kind:'call',weights:{A5s:.7}},{action:'3B',kind:'raise',weights:{A5s:.3}}]};
@@ -62,13 +58,7 @@ test('usage reads actual account headers and never invents absent values',()=>{
  assert.equal(partial.requestsLimit,null);assert.equal(partial.bytesLimit,null);
 });
 
-import {closestSupportedHistory,MissingSolverPathError,fetchSolverNode} from '../src/pokerdata.ts';
-test('recovery keeps the longest exact action prefix without substituting another raise',()=>{
- const histories=['UTG','UTG_Fold_UTG1','UTG_Fold_UTG1_Open_LJ','UTG_Fold_UTG1_AI_LJ'];
- assert.equal(closestSupportedHistory(histories,'UTG_Fold_UTG1_Open_LJ_Call_HJ'),'UTG_Fold_UTG1_Open_LJ');
- assert.equal(closestSupportedHistory(histories,'UTG_Fold_UTG1_Open-40100_LJ'),'UTG_Fold_UTG1');
- assert.equal(closestSupportedHistory([], 'UTG'),null);
-});
+import {MissingSolverPathError,fetchSolverNode} from '../src/pokerdata.ts';
 test('chart request omits hand and 404 is identifiable for negative caching',async()=>{
  const original=globalThis.fetch;let url='';
  try{globalThis.fetch=async input=>{url=String(input);return new Response(JSON.stringify({game:'nlmtt8',stack:40,history:'UTG',actor:'UTG',actions:[{action:'Fold',kind:'fold',weights:{'72o':1}}]}),{status:200})};
