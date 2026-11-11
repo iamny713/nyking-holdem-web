@@ -104,4 +104,6 @@ npm run build
 
 예정 주소: https://iamny713.github.io/nyking-holdem-web/
 
-현재 계정의 비공개 저장소 Pages는 공개 전환 또는 유료 플랜이 필요합니다. 공개 전환은 별도 확인 후 진행합니다.
+두 페이지를 공개로 배포합니다. 전체 앱: https://iamny713.github.io/nyking-holdem-web/ · 시뮬레이터 전용: https://iamny713.github.io/nyking-holdem-web/simulator/
+
+시뮬레이터 전용 진입점은 레인지·콤보 계산기 모듈을 불러오지 않습니다. 두 페이지는 HandSimulator 컴포넌트와 Web Worker를 공유합니다. 저장소는 공개입니다.
