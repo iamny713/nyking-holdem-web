@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {parsePostflop,comboMatches,postflopCards,fetchPostflopNode} from '../src/postflop.ts';
 test('postflop parsing rejects missing navigation and malformed frequencies',()=>{
  const node={actions:['Check','Bet 5.5'],childSegments:['Check','Bet 5.5'],hands:[{combo:'AsAd',freqs:[.25,.75]}]};
- assert.equal(parsePostflop({node}).hands[0].freqs[1],.75);
+ assert.equal(parsePostflop({node,childSegments:node.childSegments,board:['3h','3d','2s']}).hands[0].freqs[1],.75);
  assert.throws(()=>parsePostflop({...node,childSegments:undefined}));
  assert.throws(()=>parsePostflop({...node,hands:[{freqs:[25,75]}]}));
  assert.throws(()=>parsePostflop({...node,hands:[{freqs:[1]}]}));
