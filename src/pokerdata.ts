@@ -31,9 +31,10 @@ export function handStrategy(node:SolverNode,hand:string){
  return {rows,total,valid:Math.abs(total-1)<.025};
 }
 export const actionName=(action:string)=>({Fold:'폴드',Call:'콜',Limp:'림프',Open:'오픈','3B':'3벳','4B':'4벳','5B':'5벳',AI:'올인'} as Record<string,string>)[action]??action;
-export async function fetchSolverNode(key:string,stack:number,history:string,signal?:AbortSignal,hand?:string){
+export async function fetchSolverNode(key:string,stack:number,history:string,signal?:AbortSignal,hand?:string,onUsage?:(usage:SolverUsage)=>void){
  const query=new URLSearchParams({stack:String(stack),history});if(hand)query.set('hand',hand);
  const response=await fetch(`https://pokerdata.io/api/v1/ranges/nlmtt8/node?${query}`,{headers:{Authorization:`Bearer ${key.trim()}`},signal,credentials:'omit',referrerPolicy:'no-referrer'});
+ const usage=readUsage(response.headers);if(usage)onUsage?.(usage);
  if(!response.ok)throw Error(response.status===401||response.status===403?'API 키 또는 이 데이터의 접근 권한을 확인하세요.':response.status===429?'무료 호출 한도 또는 요청 속도를 초과했습니다. PokerData 대시보드를 확인하세요.':response.status===404?'이 액션 경로의 계산 결과가 제공되지 않습니다. 다른 조건으로 바꾸세요.':`조회 실패 (${response.status}). 잠시 후 다시 시도하세요.`);
  return parseNode(await response.json(),stack,history,hand);
 }
@@ -90,4 +91,11 @@ export function localSteps(history:string){
   for(let offset=1;offset<=solverSeats.length;offset++){const next=solverSeats[(index+offset)%solverSeats.length];if(s.pending.has(next)&&s.active.has(next)&&!s.allin.has(next))return [{action,next:`${history}_${action}_${next}`}];}
   return [];
  });
+}
+
+export type SolverUsage={requestsUsed:number|null;requestsLimit:number|null;bytesUsed:number|null;bytesLimit:number|null;resetsAt:string|null;updatedAt:number};
+export function readUsage(headers:Headers):SolverUsage|null{
+ const num=(name:string)=>{const text=headers.get(name);if(text===null||!text.trim())return null;const n=Number(text);return Number.isFinite(n)&&n>=0?n:null};
+ const usage={requestsUsed:num('X-Usage-Requests-Used'),requestsLimit:num('X-Usage-Requests-Limit'),bytesUsed:num('X-Usage-Bytes-Used'),bytesLimit:num('X-Usage-Bytes-Limit'),resetsAt:headers.get('X-Usage-Resets-At'),updatedAt:Date.now()};
+ return [usage.requestsUsed,usage.requestsLimit,usage.bytesUsed,usage.bytesLimit].some(v=>v!==null)?usage:null;
 }
