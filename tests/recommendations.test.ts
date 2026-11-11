@@ -32,9 +32,15 @@ test('authored hand choices change materially with position and stack',()=>{
  assert.equal(recommend('BTN',15,'CO','response')!.decisions['A5s'].move,'fold');
  assert.notDeepEqual(recommend('BTN',30,'UTG','response')!.decisions,recommend('BTN',30,'CO','response')!.decisions);
 });
-test('BB defense and simplified SB strategy stay distinct; SB opening size is carried into response',()=>{
+test('deep blind flats account for opener and position; shallow SB stays simplified',()=>{
  assert.equal(recommend('BB',40,'BTN','response')!.decisions['98s'].move,'call');
- for(const depth of depths.filter(d=>d>10))for(const o of positions.slice(0,7)){const r=recommend('SB',depth,o,'response')!;assert.equal(coverage(r,'call'),0)}
+ for(const depth of depths.filter(d=>d>10&&d<40))for(const o of positions.slice(0,7)){const r=recommend('SB',depth,o,'response')!;assert.equal(coverage(r,'call'),0)}
+ for(const depth of [40,60,80,100])for(const o of positions.slice(0,7))assert.ok(coverage(recommend('SB',depth,o,'response')!,'call')>0);
+ assert.equal(recommend('SB',100,'BTN','response')!.decisions['76s'].move,'call');
+ assert.equal(recommend('SB',100,'UTG','response')!.decisions['ATo'].move,'fold');
+ assert.equal(recommend('BB',100,'BTN','response')!.decisions['Q8o'].move,'call');
+ assert.equal(recommend('BB',100,'UTG','response')!.decisions['Q8o'].move,'fold');
+ assert.ok(coverage(recommend('BB',100,'BTN','response')!,'call')>coverage(recommend('SB',100,'BTN','response')!,'call'));
  assert.equal(recommend('BB',30,'SB','response')!.sizes.open,recommend('SB',30,'','open')!.sizes.open);
 });
 
