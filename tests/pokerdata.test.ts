@@ -31,3 +31,10 @@ test('simplification retains mixed strategies and refuses invalid frequencies',(
  assert.equal(dominantStrategy(node,'A5s')!.main.action,'Call');
  assert.equal(dominantStrategy(node,'72o'),null);
 });
+
+test('single-hand node frequencies normalize without inventing other hands',()=>{
+ const node=parseNode({game:'nlmtt8',stack:40,history:'UTG',actor:'UTG',evUnit:'sb',evBaseline:'fold',actions:[{action:'Fold',kind:'fold',freq:.3,ev:0},{action:'Open',kind:'raise',freq:.7,ev:1.2}]},40,'UTG','A5s');
+ assert.equal(handStrategy(node,'A5s').valid,true);
+ assert.equal(handStrategy(node,'A5s').rows[1].ev,1.2);
+ assert.equal(handStrategy(node,'AA').valid,false);
+});
