@@ -52,3 +52,12 @@ test('two selected cards map to solver classes and reject duplicates',()=>{
  assert.equal(cardHand(['Ks','As']),'AKs');assert.equal(cardHand(['Kh','As']),'AKo');assert.equal(cardHand(['Ah','As']),'AA');
  assert.equal(cardHand(['As','As']),null);assert.equal(cardHand([null,'Ks']),null);
 });
+
+import {readUsage} from '../src/pokerdata.ts';
+test('usage reads actual account headers and never invents absent values',()=>{
+ assert.equal(readUsage(new Headers()),null);
+ const u=readUsage(new Headers({'X-Usage-Requests-Used':'0','X-Usage-Requests-Limit':'10000','X-Usage-Bytes-Used':'2500000','X-Usage-Bytes-Limit':'200000000','X-Usage-Resets-At':'2026-12-01T00:00:00Z'}))!;
+ assert.equal(u.requestsUsed,0);assert.equal(u.bytesUsed,2500000);assert.equal(u.bytesLimit,200000000);
+ const partial=readUsage(new Headers({'X-Usage-Requests-Used':'7','X-Usage-Bytes-Limit':'oops'}))!;
+ assert.equal(partial.requestsLimit,null);assert.equal(partial.bytesLimit,null);
+});
