@@ -38,3 +38,17 @@ test('single-hand node frequencies normalize without inventing other hands',()=>
  assert.equal(handStrategy(node,'A5s').rows[1].ev,1.2);
  assert.equal(handStrategy(node,'AA').valid,false);
 });
+
+import {localSteps} from '../src/pokerdata.ts';
+import {cardHand} from '../src/solver-cards.ts';
+test('offline action builder skips folded seats and returns to the opener',()=>{
+ assert.equal(localSteps('UTG').find(x=>x.action==='Open')!.next,'UTG_Open_UTG1');
+ const h='UTG_Open_UTG1_Fold_LJ_Fold_HJ_Fold_CO_Fold_BTN_3B_SB_Fold_BB';
+ assert.equal(localSteps(h).find(x=>x.action==='Fold')!.next,h+'_Fold_UTG');
+ assert.equal(localSteps(h+'_Fold_UTG').some(x=>x.action==='4B'),true);
+ assert.equal(localSteps('UTG_AI_UTG1').some(x=>x.action==='3B'),false);
+});
+test('two selected cards map to solver classes and reject duplicates',()=>{
+ assert.equal(cardHand(['Ks','As']),'AKs');assert.equal(cardHand(['Kh','As']),'AKo');assert.equal(cardHand(['Ah','As']),'AA');
+ assert.equal(cardHand(['As','As']),null);assert.equal(cardHand([null,'Ks']),null);
+});
