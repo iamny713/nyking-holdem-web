@@ -63,3 +63,31 @@ export async function fetchSolverConfig(stack:number,signal?:AbortSignal):Promis
  const response=await fetch(`https://pokerdata.io/api/v1/ranges/nlmtt8/config?stack=${stack}`,{signal,credentials:'omit',referrerPolicy:'no-referrer'});
  if(!response.ok)throw Error('게임 조건을 불러오지 못했습니다.');const c=await response.json();if(c.game!=='nlmtt8'||c.stack!==stack||!c.blinds||!c.openSizes)throw Error('게임 조건 형식을 확인할 수 없습니다.');return c;
 }
+
+// Local input builder: legal simplified actions, not a claim of provider coverage.
+export function localSteps(history:string){
+ function state(path:string){
+  const active=new Set(solverSeats),allin=new Set<string>();let pending=new Set(solverSeats);let raises=0;
+  for(const d of pathDecisions(path)){
+   pending.delete(d.actor);
+   if(d.action==='Fold')active.delete(d.actor);
+   else if(!['Call','Limp','Check'].includes(d.action)){
+    raises++;if(d.action==='AI')allin.add(d.actor);
+    pending=new Set([...active].filter(p=>p!==d.actor&&!allin.has(p)));
+   }
+  }
+  return {active,allin,pending,raises};
+ }
+ const actor=history.split('_').at(-1)!;
+ if(!solverSeats.includes(actor))return [];
+ const current=state(history);
+ if(current.active.size<=1||!current.pending.size)return [];
+ const options: string[]=current.raises?['Fold','Call',...(!current.allin.size?[...(current.raises<4?[current.raises===1?'3B':current.raises===2?'4B':'5B']:[]),'AI']:[])]:['Fold',actor==='BB'?'Call':'Limp','Open','AI'];
+ return options.flatMap(action=>{
+  const s=state(`${history}_${action}_UTG`); // placeholder actor is ignored by pathDecisions
+  if(s.active.size<=1||!s.pending.size)return [];
+  const index=solverSeats.indexOf(actor);
+  for(let offset=1;offset<=solverSeats.length;offset++){const next=solverSeats[(index+offset)%solverSeats.length];if(s.pending.has(next)&&s.active.has(next)&&!s.allin.has(next))return [{action,next:`${history}_${action}_${next}`}];}
+  return [];
+ });
+}
