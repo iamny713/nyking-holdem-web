@@ -1,0 +1,2 @@
+export function SiteHeader(){return <><header><a className="brand" href="#">N<span>♠</span>K <small>NYKING HOLDEM</small></a><span className="version">POKER STUDY TOOL · V0.1</span></header><section className="intro personal-intro"><h1>노유킹이 직접 만든 홀덤 스터디 프로그램입니다.</h1><p>노유킹 WSOP 우승하는 그 날까지 업데이트함</p></section></>}
+export function SiteFooter(){return <footer><span>NYKING HOLDEM LAB</span><span>PLAY WITH CURIOSITY.</span></footer>}

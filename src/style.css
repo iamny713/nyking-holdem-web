@@ -8,3 +8,5 @@
 .combo-layout>*{min-width:0}.combo-step{min-width:0}.combo-input-row{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr)}.combo-input-row>div{min-width:0}.rank-picker{max-width:100%}@media(max-width:950px){.combo-layout{grid-template-columns:minmax(0,1fr)}.combo-layout>div:first-child{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 
 .personal-intro h1{font-size:clamp(22px,3.2vw,34px);line-height:1.55;letter-spacing:-1px;word-break:keep-all}.personal-intro p{color:#b8c7ac}
+
+.sim-only-label{color:#b8ed84;font-size:13px;font-weight:700;border-bottom:1px solid #344035;padding:15px 0;margin-bottom:28px}
