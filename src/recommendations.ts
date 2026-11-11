@@ -103,7 +103,7 @@ export function recommend(position:string,depth:number,opener:string,scenario:Sc
  if(!depths.some(d=>d===depth)||p<0||(scenario==='open'?p===8:o<0||o>=p))return null;
  const standardOpenSize=depth<=25?2:depth<=60?2.2:2.3;
  const openSize=(scenario==='response'?opener:position)==='SB'?Math.min(3,standardOpenSize+.5):standardOpenSize;
- const threeSize=depth<=20?null:depth<=30?(p>=7?6.5:5.5):depth<=60?(p>=7?8:6.6):(p>=7?9.2:7.4);
+ const threeSize=depth<=20?(depth===20&&p>=7?6.5:null):depth<=30?(p>=7?6.5:5.5):depth<=60?(p>=7?8:6.6):(p>=7?9.2:7.4);
  const decisions:Record<string,Decision>={};
  for(const h of allHands){
   const a=value(h[0]),b=value(h[1]),pair=h.length===2,suited=h.endsWith('s'),connector=suited&&a-b===1,wheel=suited&&a===14&&b<=5;
@@ -146,6 +146,11 @@ export function recommend(position:string,depth:number,opener:string,scenario:Sc
     }else if(!suited&&!pair&&(bb&&(a===14&&b>=(late?2:middle?8:10)||a===13&&b>=(late?8:11)||a===12&&b>=(late?9:11)||late&&a>=10&&b>=9)||inPosition&&has(h,late?'AJo AQo KQo':middle?'AQo KQo':'AQo'))){move='call';reason='BB의 추가 비용 또는 포지션을 고려해 일부 오프수트 고카드를 남겼습니다. 약한 킥커의 지배 위험 때문에 모든 고카드를 콜하지 않습니다.'}
    }
    if(move==='fold')reason=sb?'SB는 포지션이 불리하고 BB가 남아 있어, 이번 추천에서는 플랫콜을 생략하고 3벳/올인/폴드로 단순화했습니다.':o<=2?'앞 포지션의 강한 오픈 범위를 상대로 지배 위험과 뒤 플레이어의 재공격을 고려해 제외했습니다.':'상대의 오픈 범위, 스택과 포지션을 함께 고려했을 때 이 기본 방어 범위에는 넣지 않았습니다.';
+  }
+  // Explicit user-authored exception to the conservative shallow-stack model.
+  if(scenario==='response'&&p>=7&&depth>=20&&depth<=30&&h==='A5s'){
+   decisions[h]={move:'three',reason:'휠 수딧 에이스 · 20~30BB 블라인드 방어에 A5s를 블러프 3벳으로 포함했습니다. A 블로커와 넛 플러시 잠재력을 활용하는 사용자 지정 범위이며, 4벳 올인 콜을 의미하지 않습니다.',principles:[...principles,'blockers']};
+   continue;
   }
   decisions[h]=deepBlindDefense(h,tighten(h,{move,reason:`${family} · ${reason}`,principles},p,o,depth,scenario),p,o,depth,scenario);
  }

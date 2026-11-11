@@ -5,3 +5,17 @@ test('basic value and bluff three-bets are identified separately without changin
 test('conditional candidates retain conservative basic actions and have all use/avoid conditions',()=>{const r=recommend('BTN',40,'CO','response')!;const before=JSON.stringify(r);const candidates=bluffCandidates(r);assert.ok(candidates.some(c=>c.hand==='A4s'));assert.ok(!candidates.some(c=>c.hand==='A5s'));assert.equal(r.decisions.A4s.move,'fold');for(const c of candidates){assert.ok(c.why&&c.useWhen&&c.avoidWhen&&c.responseToFourBet)}assert.equal(JSON.stringify(r),before)});
 test('AOF, shallow stacks and strong early opens never gain speculative bluff candidates',()=>{assert.deepEqual(bluffCandidates(recommend('BTN',7,'CO','facingJam')!),[]);assert.deepEqual(bluffCandidates(recommend('BTN',25,'CO','response')!),[]);assert.deepEqual(bluffCandidates(recommend('BTN',100,'UTG','response')!),[]);assert.ok(bluffCandidates(recommend('BTN',30,'CO','response')!).some(c=>c.hand==='A5s'))});
 test('classification partitions every basic three-bet; candidates are separate in every response context',()=>{for(const d of depths.filter(x=>x>10))for(const [i,p] of positions.entries())for(const o of positions.slice(0,i)){const r=recommend(p,d,o,'response')!;const sets=['value','linear','bluff'].flatMap(k=>studyHands(r,k as 'value'|'linear'|'bluff'));assert.equal(new Set(sets).size,sets.length);assert.deepEqual(new Set(sets),new Set(Object.keys(r.decisions).filter(h=>r.decisions[h].move==='three')));for(const c of bluffCandidates(r))assert.ok(['call','fold'].includes(r.decisions[c.hand].move));}});
+
+test('20–30BB blinds include A5s as an actual bluff three-bet against every valid opener',()=>{
+ for(const depth of [20,25,30])for(const position of ['SB','BB'])for(const opener of positions.slice(0,positions.indexOf(position))){
+  const r=recommend(position,depth,opener,'response')!;
+  assert.equal(r.decisions.A5s.move,'three');
+  assert.equal(threeKind('A5s',r.decisions.A5s,r),'bluff');
+  assert.ok(studyHands(r,'bluff').includes('A5s'));
+  assert.ok(!bluffCandidates(r).some(c=>c.hand==='A5s'));
+  assert.equal(r.sizes.three,6.5);
+  assert.notEqual(r.decisions.A4s.move,'three');
+ }
+ for(const position of ['SB','BB'])assert.notEqual(recommend(position,15,'BTN','response')!.decisions.A5s.move,'three');
+ assert.notEqual(recommend('BTN',20,'CO','response')!.decisions.A5s.move,'three');
+});

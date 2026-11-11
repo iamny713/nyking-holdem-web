@@ -16,7 +16,7 @@ test('every supported context has 169 exclusive decisions and conserves 1326 com
   for(const c of contextsForPosition){
    const r=recommend(p,depth,c.opener,c.scenario)!;assert.ok(r);contexts++;assert.equal(Object.keys(r.decisions).length,169);
    assert.ok(Math.abs(moves.reduce((n,m)=>n+coverage(r,m),0)-1)<1e-9);
-   for(const h of allHands){const d=r.decisions[h];assert.ok(moves.includes(d.move));assert.ok(d.reason.length>30);assert.ok(d.principles.length>=2);if(c.scenario==='open')assert.ok(!['call','three'].includes(d.move));else assert.notEqual(d.move,'open');if(d.move==='three'){assert.ok(r.sizes.three&&r.sizes.three<depth)}if(depth<=20)assert.notEqual(d.move,'three');}
+   for(const h of allHands){const d=r.decisions[h];assert.ok(moves.includes(d.move));assert.ok(d.reason.length>30);assert.ok(d.principles.length>=2);if(c.scenario==='open')assert.ok(!['call','three'].includes(d.move));else assert.notEqual(d.move,'open');if(d.move==='three'){assert.ok(r.sizes.three&&r.sizes.three<depth)}if(depth<=20&&!(depth===20&&i>=7&&c.scenario==='response'&&h==='A5s'))assert.notEqual(d.move,'three');}
    assert.equal(r.decisions.AA.move,c.scenario==='open'?'open':depth<=20?'jam':'three');
   }
  }
