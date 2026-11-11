@@ -4,7 +4,7 @@ export type Scenario = 'open'|'response'|'facingJam';
 export type Move = 'open'|'call'|'three'|'jam'|'callJam'|'fold';
 export const moveLabels:Record<Move,string> = {open:'오픈',call:'플랫콜',three:'일반 3벳',jam:'올인',callJam:'올인 콜',fold:'폴드'};
 export const moveColors:Record<Move,string> = {open:'#b8ed84',call:'#88b9d7',three:'#e8c185',jam:'#d99bcb',callJam:'#b3a7f5',fold:'#28372d'};
-export const model = {version:'1.2.0',players:9,ante:'BB 앤티 1 BB',model:'chipEV',stacks:'전원 동일 스택',solverVerified:false};
+export const model = {version:'1.3.0',players:9,ante:'BB 앤티 1 BB',model:'chipEV',stacks:'전원 동일 스택',solverVerified:false};
 // These are authored strategic choices, NOT solver outputs, trained weights, or source-chart interpolations.
 // Each row explicitly selects one complete opening repertoire for its stack depth.
 const openingSpecs:Record<number,string[]> = {
@@ -147,9 +147,34 @@ export function recommend(position:string,depth:number,opener:string,scenario:Sc
    }
    if(move==='fold')reason=sb?'SB는 포지션이 불리하고 BB가 남아 있어, 이번 추천에서는 플랫콜을 생략하고 3벳/올인/폴드로 단순화했습니다.':o<=2?'앞 포지션의 강한 오픈 범위를 상대로 지배 위험과 뒤 플레이어의 재공격을 고려해 제외했습니다.':'상대의 오픈 범위, 스택과 포지션을 함께 고려했을 때 이 기본 방어 범위에는 넣지 않았습니다.';
   }
-  decisions[h]=tighten(h,{move,reason:`${family} · ${reason}`,principles},p,o,depth,scenario);
+  decisions[h]=deepBlindDefense(h,tighten(h,{move,reason:`${family} · ${reason}`,principles},p,o,depth,scenario),p,o,depth,scenario);
  }
  return {position,opener,depth,scenario,decisions,sizes:{open:openSize,three:threeSize},version:model.version};
+}
+// Authored pure-action defenses against the displayed small open, not solved frequencies.
+// Keep re-raises from the conservative model; avoid its global cold-call filter in blinds.
+function deepBlindDefense(h:string,d:Decision,p:number,o:number,depth:number,scenario:Scenario):Decision{
+ if(scenario!=='response'||depth<40||p<7||d.move==='three'||d.move==='jam')return d;
+ const sb=p===7;
+ const group=o<=2?0:o<=4?1:o===5?2:o===6?3:4;
+ const sbSpecs=[
+  '55+ ATs+ KJs+ QJs JTs T9s 98s AQo KQo',
+  '44+ A9s+ KTs+ QTs+ JTs T9s 98s 87s AJo+ KQo',
+  '33+ A5s+ KTs+ QTs+ J9s+ T9s 98s 87s 76s AJo+ KJo+ QJo',
+  '22+ A2s+ K9s+ Q9s+ J9s+ T8s+ 98s 87s 76s ATo+ KJo+ QJo'
+ ];
+ const bbSpecs=[
+  '22+ A2s+ K7s+ Q8s+ J8s+ T8s+ 97s+ 87s 76s 65s 54s ATo+ KTo+ QTo+ JTo T9o',
+  '22+ A2s+ K5s+ Q7s+ J7s+ T7s+ 96s+ 86s+ 75s+ 64s+ 54s A8o+ K9o+ Q9o+ J9o+ T9o 98o',
+  '22+ A2s+ K3s+ Q5s+ J6s+ T6s+ 96s+ 85s+ 75s+ 64s+ 54s A5o+ K8o+ Q9o+ J9o+ T9o 98o 87o',
+  '22+ A2s+ K2s+ Q4s+ J5s+ T6s+ 95s+ 85s+ 74s+ 64s+ 53s+ 43s A2o+ K7o+ Q8o+ J8o+ T8o+ 97o+ 87o 76o',
+  '22+ A2s+ K2s+ Q2s+ J3s+ T4s+ 94s+ 84s+ 74s+ 64s+ 53s+ 43s A2o+ K5o+ Q7o+ J7o+ T7o+ 97o+ 86o+ 76o 65o'
+ ];
+ const included=has(h,sb?sbSpecs[group]:bbSpecs[group])||sb&&depth>=60&&has(h,group===0?'22+ 87s 76s':group===1?'22+ A5s+ 76s 65s':'65s 54s');
+ const reason=included
+  ?sb?'SB도 플랫콜을 허용합니다. 상대 오픈 위치에 맞춰 페어·수딧 잠재력·고카드를 남겼습니다. BB보다 추가 비용이 크고 모든 포스트플랍에서 불리하며, 뒤 BB의 스퀴즈가 있어 더 좁게 방어합니다.':o===7?'SB 오픈에는 BB가 포스트플랍 포지션을 가지며 액션을 닫습니다. 이점을 반영해 약한 고카드·연결성 핸드까지 콜을 넓혔습니다.':'BB는 이미 낸 1BB와 앤티 덕분에 추가 콜 가격이 낮고 액션을 닫습니다. 상대가 늦은 위치일수록 마지널 수딧·오프수트 연결 핸드를 더 남겼습니다.'
+  :sb?'SB 콜을 허용하더라도 이 핸드는 지배 위험·포지션 불리함과 BB의 스퀴즈 가능성을 고려해 제외했습니다.':'작은 오픈에 대한 BB 방어를 넓혔지만 이 핸드는 상대 위치 대비 연결성·킥커·에퀴티 실현성이 부족하다고 판단했습니다.';
+ return {move:included?'call':'fold',reason:`${depth}BB · ${reason} 표시된 작은 오픈·콜러 없음 기준의 자체 설계이며, 큰 오픈이나 ICM 압박에는 그대로 적용하지 않습니다.`,principles:['opener-strength',sb?'small-blind':'blind-price','blind-defense']};
 }
 export function coverage(r:Recommendation,move:Move){return allHands.reduce((sum,h)=>sum+(r.decisions[h].move===move?combos(h):0),0)/1326}
 
