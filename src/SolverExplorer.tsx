@@ -1,3 +1,4 @@
+import {usePokerDataKey} from './solver-key';
 import {useEffect,useRef,useState} from 'react';
 import {readSolverCache,writeSolverCache,clearSolverCache} from './solver-cache';
 import {concreteHand} from './ranges';
@@ -8,9 +9,8 @@ import {cardHand} from './solver-cards';
 import {actionName,dominantStrategy,fetchSolverConfig,fetchSolverNode,handStrategy,localSteps,MissingSolverPathError,pathDecisions,solverDepths,solverSeats} from './pokerdata';
 import type {SolverUsage,SolverConfig,SolverNode} from './pokerdata';
 const keyStorage='nyking.pokerdata.api-key.v1';
-function savedKey(){try{return localStorage.getItem(keyStorage)??''}catch{return ''}}
 export function SolverExplorer(){
- const [key,setKey]=useState(savedKey),[depth,setDepth]=useState(40),[hero,setHero]=useState('BTN'),[history,setHistory]=useState('UTG'),[hand,setHand]=useState('');
+ const [key,setKey]=usePokerDataKey(),[depth,setDepth]=useState(40),[hero,setHero]=useState('BTN'),[history,setHistory]=useState('UTG'),[hand,setHand]=useState('');
  const [result,setResult]=useState<{node:SolverNode;cached:boolean}|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[calls,setCalls]=useState(0);
  const [config,setConfig]=useState<SolverConfig|null>(null),[detailed,setDetailed]=useState(false);
  const configs=useRef(new Map<number,SolverConfig>());

@@ -2,8 +2,8 @@ import {readUsage,type SolverUsage} from './pokerdata.ts';
 export type PostflopPack={id:string;title:string;stackBb:number;oopPos:string;ipPos:string;potBb:number;sizingTrees:{tree:string;packId:string;betSizing:string}[];boards:{board:string;trees:string[];queryable?:boolean;actionEv?:{available:boolean}}[]};
 export type PostflopNode={actions:(string|{label?:string;name?:string;type?:string;add?:number})[];childSegments:string[];hands:{combo?:string;hand?:string;freqs:number[];action_ev?:number[];ev_loss?:number[]}[];board?:string|string[];pot?:number;player?:string|number;actor?:string;path?:string[]};
 export function parsePostflop(raw:unknown):PostflopNode{
- const envelope=raw as {node?:unknown};const n=(envelope?.node??raw) as PostflopNode;
- if(!n||!Array.isArray(n.actions)||!Array.isArray(n.childSegments)||!n.childSegments.every(s=>typeof s==='string')||!Array.isArray(n.hands))throw Error('포스트플랍 응답 형식 확인: '+JSON.stringify(responseShape(raw)));
+ const envelope=raw as {node?:PostflopNode;childSegments?:string[];board?:string|string[]};const n=(envelope?.node?{...envelope.node,childSegments:envelope.childSegments,board:envelope.board}:raw) as PostflopNode;
+ if(!n||!Array.isArray(n.actions)||!Array.isArray(n.childSegments)||!n.childSegments.every(s=>typeof s==='string')||!Array.isArray(n.hands))throw Error('포스트플랍 응답 형식을 확인할 수 없습니다. 추정 결과를 표시하지 않았습니다.');
  for(const h of n.hands)if(!Array.isArray(h.freqs)||h.freqs.length!==n.actions.length||h.freqs.some(f=>typeof f!=='number'||!Number.isFinite(f)||f<0||f>1))throw Error('액션 빈도 형식이 올바르지 않습니다.');
  return n;
 }
@@ -18,7 +18,6 @@ export async function fetchPostflopNode(key:string,pack:string,board:string,path
  const q=new URLSearchParams({pack,board,path:JSON.stringify(path),combo});
  const r=await fetch(`https://pokerdata.io/api/v1/postflop/node?${q}`,{headers:{Authorization:`Bearer ${key.trim()}`},signal,credentials:'omit',referrerPolicy:'no-referrer'});const usage=readUsage(r.headers);if(usage)onUsage(usage);
  if(!r.ok)throw Error(r.status===404?'이 보드 또는 액션 경로의 결과가 없습니다.':r.status===401||r.status===403?'API 키 또는 포스트플랍 접근 권한을 확인하세요.':r.status===429?'API 요청 한도를 확인하세요.':`포스트플랍 조회 실패 (${r.status})`);
- return parsePostflop(await r.json());
+ const node=parsePostflop(await r.json());if(node.path&&JSON.stringify(node.path)!==JSON.stringify(path))throw Error('요청한 액션 경로와 응답이 다릅니다.');const actualBoard=Array.isArray(node.board)?node.board:node.board?.split(' ');if(actualBoard&&JSON.stringify(actualBoard)!==JSON.stringify(postflopCards(board,path)))throw Error('요청한 보드와 응답이 다릅니다.');return node;
 }
 
-function responseShape(v:unknown,depth=0):unknown{if(depth>3)return typeof v;if(Array.isArray(v))return {length:v.length,first:responseShape(v[0],depth+1)};if(v&&typeof v==='object')return Object.fromEntries(Object.entries(v).map(([k,x])=>[k,responseShape(x,depth+1)]));return typeof v}
