@@ -14,10 +14,10 @@ export async function fetchPostflopCatalog(signal?:AbortSignal):Promise<Postflop
  const r=await fetch('https://pokerdata.io/api/v1/postflop/catalog',{signal,credentials:'omit'});if(!r.ok)throw Error(`지원 목록 조회 실패 (${r.status})`);const data=await r.json();
  if(!Array.isArray(data.packs)||!data.packs.every((p:PostflopPack)=>p.id&&Array.isArray(p.boards)&&Array.isArray(p.sizingTrees)))throw Error('지원 목록 형식을 확인할 수 없습니다.');return data.packs;
 }
-export async function fetchPostflopNode(key:string,pack:string,board:string,path:string[],combo:string,signal:AbortSignal,onUsage:(usage:SolverUsage)=>void){
- const q=new URLSearchParams({pack,board,path:JSON.stringify(path),combo});
+export async function fetchPostflopNode(key:string,pack:string,board:string,path:string[],combo:string,signal:AbortSignal,onUsage:(usage:SolverUsage)=>void,requestEv=false){
+ const q=new URLSearchParams({pack,board,path:JSON.stringify(path)});if(requestEv)q.set('combo',combo);
  const r=await fetch(`https://pokerdata.io/api/v1/postflop/node?${q}`,{headers:{Authorization:`Bearer ${key.trim()}`},signal,credentials:'omit',referrerPolicy:'no-referrer'});const usage=readUsage(r.headers);if(usage)onUsage(usage);
- if(!r.ok)throw Error(r.status===404?'이 보드 또는 액션 경로의 결과가 없습니다.':r.status===401||r.status===403?'API 키 또는 포스트플랍 접근 권한을 확인하세요.':r.status===429?'API 요청 한도를 확인하세요.':`포스트플랍 조회 실패 (${r.status})`);
+ if(!r.ok){let detail='';try{const body=await r.json();const message=typeof body.error==='string'?body.error:typeof body.message==='string'?body.message:'';detail=message.replaceAll(key.trim(),'[키]').slice(0,250)}catch{/* Status remains usable for non-JSON errors. */}throw Error((r.status===404?'이 보드 또는 액션 경로의 결과가 없습니다.':r.status===401||r.status===403?'API 키 또는 포스트플랍 접근 권한을 확인하세요.':r.status===429?'API 요청 한도를 확인하세요.':`포스트플랍 조회 실패 (${r.status})`)+(detail?` · ${detail}`:''))}
  const node=parsePostflop(await r.json());if(node.path&&JSON.stringify(node.path)!==JSON.stringify(path))throw Error('요청한 액션 경로와 응답이 다릅니다.');const actualBoard=Array.isArray(node.board)?node.board:node.board?.split(' ');if(actualBoard&&JSON.stringify(actualBoard)!==JSON.stringify(postflopCards(board,path)))throw Error('요청한 보드와 응답이 다릅니다.');return node;
 }
 
