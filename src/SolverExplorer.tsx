@@ -14,12 +14,12 @@ const keyStorage='nyking.pokerdata.api-key.v1';
 export function SolverExplorer({icmScenario}:{icmScenario?:IcmScenario}={}){
  const [key,setKey]=usePokerDataKey(),[depth,setDepth]=useState(40),[hero,setHero]=useState('BTN'),[history,setHistory]=useState('UTG'),[hand,setHand]=useState('');
  const [result,setResult]=useState<{node:SolverNode;cached:boolean}|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[calls,setCalls]=useState(0);
- const [config,setConfig]=useState<SolverConfig|null>(null),[detailed,setDetailed]=useState(false);
+ const [config,setConfig]=useState<SolverConfig|null>(null),[detailed,setDetailed]=useState(true);
  const configs=useRef(new Map<number,SolverConfig>());
  const [usage,setUsage]=useState<SolverUsage|null>(null);
  useEffect(()=>{let cancelled=false;setUsage(null);if(key.trim())void readSolverCache<SolverUsage>(key,'usage').then(u=>{if(!cancelled&&u)setUsage(current=>current&&current.updatedAt>u.updatedAt?current:u)});return()=>{cancelled=true}},[key]);
  const [cards,setCards]=useState<(string|null)[]>([null,null]);
- const [mode,setMode]=useState<'hand'|'chart'>('hand');
+ const [mode,setMode]=useState<'hand'|'chart'>('chart');
  const missingCache=useRef(new Set<string>());
  const [includeSizes,setIncludeSizes]=useState(false);
  const [storageMessage,setStorageMessage]=useState('');
